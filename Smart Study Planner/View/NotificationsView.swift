@@ -2,125 +2,198 @@
 //  NotificationsView.swift
 //  Smart Study Planner
 //
-//  Created by Kevin on 2026. 05. 22..
-//
 
 import SwiftUI
 import SwiftData
 
 struct NotificationsView: View {
-    @Query(sort: \Exam.date) private var exams: [Exam]
-    
-    @State private var weeklyReminderEnabled = true
-    @State private var dailyReminderEnabled = true
-    @State private var examReminderDays = 7
-    @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
-    
-    private var upcomingWithReminders: [Exam] {
-        exams.filter { !$0.isCompleted && $0.daysUntil >= 0 && $0.daysUntil <= 14 }
+    @Environment(\.modelContext) private var modelContext
+
+    // ViewModel – ez tartalmaz MINDEN logikát
+    @State private var vm: NotificationsViewModel?
+
+    var body: some View {
+        Group {
+            if let vm {
+                NotificationsContentView(vm: vm)
+            } else {
+                ProgressView()
+            }
+        }
+        .task {
+            // ViewModel létrehozása és engedélykérés
+            let newVM = NotificationsViewModel(modelContext: modelContext)
+            await newVM.requestAuthorizationIfNeeded()
+            vm = newVM
+        }
     }
-    
+}
+
+// MARK: - Fő tartalom (külön view, hogy a vm mindig létezzen)
+private struct NotificationsContentView: View {
+    @Bindable var vm: NotificationsViewModel
+
     var body: some View {
         NavigationStack {
             List {
-                // General settings section
+                // MARK: Engedély banner (ha nincs megadva)
+                if !vm.isAuthorized {
+                    Section {
+                        HStack(spacing: 12) {
+                            Image(systemName: "bell.slash.fill")
+                                .foregroundStyle(.red)
+                                .font(.title2)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Értesítések letiltva")
+                                    .font(.subheadline).fontWeight(.semibold)
+                                Text("Az alkalmazásnak nincs engedélye értesítések küldésére. Engedélyezd a Beállításokban.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+
+                        Button("Beállítások megnyitása") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .foregroundStyle(.indigo)
+                    }
+                }
+
+                // MARK: Általános beállítások
                 Section {
-                    Toggle(isOn: $weeklyReminderEnabled) {
+                    Toggle(isOn: $vm.weeklyReminderEnabled) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Heti összesítő")
-                                    .font(.body)
-                                Text("Hétfőn reggel: a hét vizsgái és heti terv")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                Text("Minden hétfőn a beállított időben")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
                         } icon: {
-                            Image(systemName: "calendar.badge.clock")
-                                .foregroundStyle(.indigo)
+                            Image(systemName: "calendar.badge.clock").foregroundStyle(.indigo)
                         }
                     }
-                    
-                    Toggle(isOn: $dailyReminderEnabled) {
+
+                    if vm.weeklyReminderEnabled {
+                        DatePicker(
+                            "Heti emlékeztető ideje",
+                            selection: $vm.weeklyReminderTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .environment(\.locale, Locale(identifier: "hu_HU"))
+                    }
+
+                    Toggle(isOn: $vm.dailyReminderEnabled) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Napi emlékeztető")
-                                    .font(.body)
-                                Text("A mai nap vizsgái és tanulási napló")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                Text("Tanulási napló rögzítése")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
                         } icon: {
-                            Image(systemName: "bell.badge")
-                                .foregroundStyle(.orange)
+                            Image(systemName: "bell.badge").foregroundStyle(.orange)
                         }
                     }
-                    
-                    if dailyReminderEnabled {
-                        DatePicker("Emlékeztető ideje", selection: $reminderTime, displayedComponents: .hourAndMinute)
-                            .environment(\.locale, Locale(identifier: "hu_HU"))
+
+                    if vm.dailyReminderEnabled {
+                        DatePicker(
+                            "Napi emlékeztető ideje",
+                            selection: $vm.dailyReminderTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .environment(\.locale, Locale(identifier: "hu_HU"))
                     }
                 } header: {
                     Text("Általános beállítások")
                 }
-                
-                // Exam reminder lead time
+
+                // MARK: Vizsga-emlékeztető előre hozása
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("Vizsga előtt \(examReminderDays) nappal")
-                                .font(.body)
+                            Text("Értesítés ideje")
                             Spacer()
-                            Text("\(examReminderDays) nap")
-                                .font(.subheadline)
-                                .foregroundStyle(.indigo)
-                                .fontWeight(.semibold)
+                            Text("\(vm.examReminderDays) nappal korábban")
+                                .font(.subheadline).foregroundStyle(.indigo).fontWeight(.semibold)
                         }
-                        Slider(value: Binding(
-                            get: { Double(examReminderDays) },
-                            set: { examReminderDays = Int($0) }
-                        ), in: 1...14, step: 1)
+                        Slider(
+                            value: Binding(
+                                get: { Double(vm.examReminderDays) },
+                                set: { vm.examReminderDays = Int($0) }
+                            ),
+                            in: 1...14, step: 1
+                        )
                         .accentColor(.indigo)
                         HStack {
-                            Text("1 nap")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text("1 nap").font(.caption).foregroundStyle(.secondary)
                             Spacer()
-                            Text("2 hét")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text("2 hét").font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
+
+                    // Alapértelmezett időpont minden vizsgához (ha nincs egyedi)
+                    DatePicker(
+                        "Alapértelmezett időpont",
+                        selection: $vm.dailyReminderTime,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .environment(\.locale, Locale(identifier: "hu_HU"))
+
                 } header: {
                     Text("Vizsga-emlékeztető")
                 } footer: {
-                    Text("Az alkalmazás automatikusan küld értesítést minden közelgő vizsgáról \(examReminderDays) nappal korábban.")
+                    Text("Az értesítések \(vm.examReminderDays) nappal a vizsga előtt, a beállított időpontban mennek ki.")
                 }
-                
-                // Upcoming reminders preview
-                if !upcomingWithReminders.isEmpty {
+
+                // MARK: Beütemezett értesítések (egyedi időpont per vizsga)
+                if !vm.upcomingWithReminders.isEmpty {
                     Section {
-                        ForEach(upcomingWithReminders) { exam in
-                            ScheduledReminderRow(exam: exam, leadDays: examReminderDays)
+                        ForEach(vm.upcomingWithReminders) { exam in
+                            ScheduledReminderRow(
+                                exam: exam,
+                                reminderDateTime: vm.reminderDateTime(for: exam),
+                                customTime: Binding(
+                                    get: { vm.customExamReminderTimes[exam.id] ?? vm.dailyReminderTime },
+                                    set: { vm.customExamReminderTimes[exam.id] = $0 }
+                                ),
+                                urgencyColor: vm.urgencyColor(for: exam)
+                            )
                         }
                     } header: {
                         Text("Beütemezett értesítések")
                     } footer: {
-                        Text("Az értesítések \(examReminderDays) nappal a vizsga előtt lesznek kiküldve.")
+                        Text("Minden vizsgához egyedi időpontot is beállíthatsz.")
                     }
                 }
-                
-                // Tips section
+
+                // MARK: Teszt gomb (fejlesztéshez, kivehetod élesben)
+                #if DEBUG
+                Section {
+                    Button {
+                        vm.scheduleTestNotification()
+                    } label: {
+                        Label("Teszt értesítés (10 mp)", systemImage: "bell.and.waves.left.and.right")
+                            .foregroundStyle(.indigo)
+                    }
+                } header: {
+                    Text("Fejlesztői eszközök")
+                } footer: {
+                    Text("Nyomd meg, majd küldd háttérbe az appot. 10 másodperc múlva megérkezik a teszt értesítés.")
+                }
+                #endif
+
+                // MARK: Tippek
                 Section {
                     NotificationTipRow(
-                        icon: "lightbulb.fill",
-                        iconColor: .yellow,
+                        icon: "lightbulb.fill", iconColor: .yellow,
                         title: "Okos emlékeztetők",
-                        description: "Az alkalmazás a vizsga típusa és prioritása alapján állítja be az emlékeztetők intenzitását."
+                        description: "Az alkalmazás a vizsga prioritása alapján állítja be az emlékeztetők intenzitását."
                     )
                     NotificationTipRow(
-                        icon: "iphone",
-                        iconColor: .blue,
+                        icon: "iphone", iconColor: .blue,
                         title: "Widget támogatás",
                         description: "Add hozzá a kezdőképernyő widgetet a következő vizsgák gyors eléréséhez."
                     )
@@ -135,66 +208,83 @@ struct NotificationsView: View {
     }
 }
 
-// MARK: - Scheduled Reminder Row
+// MARK: - Scheduled Reminder Row (egyedi időpont beállítással)
 struct ScheduledReminderRow: View {
     let exam: Exam
-    let leadDays: Int
-    
-    private var reminderDate: Date {
-        Calendar.current.date(byAdding: .day, value: -leadDays, to: exam.date) ?? exam.date
-    }
-    
+    let reminderDateTime: Date
+    @Binding var customTime: Date
+    let urgencyColor: Color
+
+    @State private var showTimePicker = false
+
     private var reminderDateString: String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "hu_HU")
         f.dateStyle = .medium
-        return f.string(from: reminderDate)
+        f.timeStyle = .short
+        return f.string(from: reminderDateTime)
     }
-    
-    private var urgencyColor: Color {
-        switch exam.daysUntil {
-        case ..<1: return .red
-        case 1...3: return .orange
-        default: return .indigo
-        }
-    }
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(urgencyColor.opacity(0.12))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "bell.fill")
-                    .foregroundStyle(urgencyColor)
-                    .font(.body)
-            }
-            
-            VStack(alignment: .leading, spacing: 3) {
-                Text(exam.subject)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                HStack(spacing: 4) {
-                    Image(systemName: "bell")
-                        .font(.caption2)
-                    Text("Emlékeztető: \(reminderDateString)")
-                        .font(.caption)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(urgencyColor.opacity(0.12))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "bell.fill")
+                        .foregroundStyle(urgencyColor)
                 }
-                .foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(exam.subject)
+                        .font(.subheadline).fontWeight(.semibold)
+                    HStack(spacing: 4) {
+                        Image(systemName: "bell").font(.caption2)
+                        Text(reminderDateString)
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Egyedi időpont gomb
+                Button {
+                    showTimePicker.toggle()
+                } label: {
+                    Image(systemName: "clock.badge.checkmark")
+                        .foregroundStyle(showTimePicker ? urgencyColor : .secondary)
+                }
+                .buttonStyle(.plain)
+
+                Text(exam.urgencyLevel)
+                    .font(.caption2).fontWeight(.medium)
+                    .foregroundStyle(urgencyColor)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(urgencyColor.opacity(0.12))
+                    .clipShape(Capsule())
             }
-            
-            Spacer()
-            
-            Text(exam.urgencyLevel)
-                .font(.caption2)
-                .fontWeight(.medium)
-                .foregroundStyle(urgencyColor)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(urgencyColor.opacity(0.12))
-                .clipShape(Capsule())
+            .padding(.vertical, 2)
+
+            // Kinyíló egyedi időpont-választó
+            if showTimePicker {
+                Divider().padding(.vertical, 4)
+                HStack {
+                    Text("Egyedi időpont:")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    DatePicker(
+                        "",
+                        selection: $customTime,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .labelsHidden()
+                    .environment(\.locale, Locale(identifier: "hu_HU"))
+                }
+                .padding(.bottom, 4)
+            }
         }
-        .padding(.vertical, 2)
     }
 }
 
@@ -204,25 +294,18 @@ struct NotificationTipRow: View {
     let iconColor: Color
     let title: String
     let description: String
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(iconColor.opacity(0.15))
                     .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .foregroundStyle(iconColor)
-                    .font(.body)
+                Image(systemName: icon).foregroundStyle(iconColor)
             }
-            
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(title).font(.subheadline).fontWeight(.semibold)
+                Text(description).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

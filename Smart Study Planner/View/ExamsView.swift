@@ -11,29 +11,22 @@ import SwiftData
 struct ExamsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Exam.date) private var exams: [Exam]
-    @State private var showingAddExam = false
-    @State private var selectedFilter: ExamFilter = .upcoming
-    
-    enum ExamFilter: String, CaseIterable {
-        case upcoming = "Közelgő"
-        case completed = "Teljesített"
-        case all = "Mind"
+
+    @State private var viewModel: ExamsViewModel?
+
+    private var vm: ExamsViewModel {
+        if let vm = viewModel { return vm }
+        fatalError("ViewModel nincs inicializálva")
     }
-    
-    private var filteredExams: [Exam] {
-        switch selectedFilter {
-        case .upcoming: return exams.filter { !$0.isCompleted && $0.daysUntil >= 0 }
-        case .completed: return exams.filter { $0.isCompleted }
-        case .all: return exams
-        }
-    }
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Filter picker
-                Picker("Szűrő", selection: $selectedFilter) {
-                    ForEach(ExamFilter.allCases, id: \.self) {
+                Picker("Szűrő", selection: Binding(
+                    get: { vm.selectedFilter },
+                    set: { vm.selectedFilter = $0 }
+                )) {
+                    ForEach(ExamsViewModel.ExamFilter.allCases, id: \.self) {
                         Text($0.rawValue).tag($0)
                     }
                 }
@@ -41,23 +34,16 @@ struct ExamsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
                 .background(Color(.systemGroupedBackground))
-                
-                if filteredExams.isEmpty {
-                    ExamsEmptyState(filter: selectedFilter)
+
+                if vm.isEmpty {
+                    ExamsEmptyState(filter: vm.selectedFilter)
                 } else {
                     List {
-                        ForEach(filteredExams) { exam in
-                            ExamDetailRow(exam: exam)
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        modelContext.delete(exam)
-                                    } label: {
-                                        Label("Törlés", systemImage: "trash")
-                                    }
-                                }
+                        ForEach(vm.filteredExams) { exam in
+                            ExamDetailRow(exam: exam, urgencyColor: vm.urgencyColor(for: exam))
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        exam.isCompleted.toggle()
+                                        vm.toggleCompleted(exam)
                                     } label: {
                                         Label(
                                             exam.isCompleted ? "Visszaállítás" : "Kész",
@@ -65,6 +51,20 @@ struct ExamsView: View {
                                         )
                                     }
                                     .tint(.green)
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        vm.deleteExam(exam)
+                                    } label: {
+                                        Label("Törlés", systemImage: "trash")
+                                    }
+
+                                    Button {
+                                        vm.openEditSheet(for: exam)
+                                    } label: {
+                                        Label("Szerkesztés", systemImage: "pencil")
+                                    }
+                                    .tint(.indigo)
                                 }
                         }
                     }
@@ -77,7 +77,7 @@ struct ExamsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showingAddExam = true
+                        vm.openAddExamSheet()
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
@@ -85,8 +85,25 @@ struct ExamsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingAddExam) {
-                AddExamSheet()
+            .sheet(isPresented: Binding(
+                get: { vm.showingAddExam },
+                set: { if !$0 { vm.dismissAddExamSheet() } }
+            )) {
+                AddExamSheet(viewModel: vm)
+            }
+            .sheet(item: Binding(
+                get: { vm.examToEdit },
+                set: { vm.examToEdit = $0 }
+            )) { exam in
+                EditExamSheet(exam: exam) { subject, date, priority, notes in
+                    vm.saveEdited(exam: exam, subject: subject, date: date, priority: priority, notes: notes)
+                }
+            }
+            .onChange(of: exams, initial: true) { _, newValue in
+                if viewModel == nil {
+                    viewModel = ExamsViewModel(modelContext: modelContext)
+                }
+                viewModel?.exams = newValue
             }
         }
     }
@@ -95,33 +112,22 @@ struct ExamsView: View {
 // MARK: - Exam Detail Row
 struct ExamDetailRow: View {
     let exam: Exam
-    
+    let urgencyColor: Color
+
     private var dateString: String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "hu_HU")
         formatter.dateStyle = .long
         return formatter.string(from: exam.date)
     }
-    
-    private var urgencyColor: Color {
-        if exam.isCompleted { return .green }
-        switch exam.daysUntil {
-        case ..<1: return .red
-        case 1...3: return .orange
-        default: return .indigo
-        }
-    }
-    
+
     var body: some View {
         HStack(spacing: 14) {
-            // Priority indicator
-            VStack {
-                Image(systemName: exam.isCompleted ? "checkmark.circle.fill" : exam.priority.icon)
-                    .font(.title3)
-                    .foregroundStyle(urgencyColor)
-            }
-            .frame(width: 32)
-            
+            Image(systemName: exam.isCompleted ? "checkmark.circle.fill" : exam.priority.icon)
+                .font(.title3)
+                .foregroundStyle(urgencyColor)
+                .frame(width: 32)
+
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(exam.subject)
@@ -139,15 +145,13 @@ struct ExamDetailRow: View {
                         .background(urgencyColor.opacity(0.12))
                         .clipShape(Capsule())
                 }
-                
+
                 HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.caption2)
-                    Text(dateString)
-                        .font(.caption)
+                    Image(systemName: "calendar").font(.caption2)
+                    Text(dateString).font(.caption)
                 }
                 .foregroundStyle(.secondary)
-                
+
                 if !exam.notes.isEmpty {
                     Text(exam.notes)
                         .font(.caption)
@@ -162,23 +166,83 @@ struct ExamDetailRow: View {
 
 // MARK: - Add Exam Sheet
 struct AddExamSheet: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var subject = ""
-    @State private var date = Date()
-    @State private var priority: Exam.Priority = .medium
-    @State private var notes = ""
-    
+    @Bindable var viewModel: ExamsViewModel
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Tantárgy adatai") {
-                    TextField("Tantárgy neve (pl. Matematika)", text: $subject)
-                    DatePicker("Időpontja", selection: $date, in: Date()..., displayedComponents: .date)
+                    TextField("Tantárgy neve (pl. Matematika)", text: $viewModel.draftSubject)
+                    DatePicker("Időpontja", selection: $viewModel.draftDate, in: Date()..., displayedComponents: .date)
                         .environment(\.locale, Locale(identifier: "hu_HU"))
                 }
-                
+
+                Section("Prioritás") {
+                    Picker("Prioritás", selection: $viewModel.draftPriority) {
+                        ForEach(Exam.Priority.allCases, id: \.self) { p in
+                            Label(p.rawValue, systemImage: p.icon).tag(p)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Megjegyzés (opcionális)") {
+                    TextEditor(text: $viewModel.draftNotes)
+                        .frame(minHeight: 80)
+                }
+            }
+            .navigationTitle("Új vizsga / ZH")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Mégse") { viewModel.dismissAddExamSheet() }
+                        .foregroundStyle(.secondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Hozzáadás") { viewModel.saveDraftExam() }
+                        .fontWeight(.semibold)
+                        .disabled(!viewModel.canSaveDraft)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Edit Exam Sheet
+struct EditExamSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let exam: Exam
+    let onSave: (String, Date, Exam.Priority, String) -> Void
+
+    @State private var subject: String
+    @State private var date: Date
+    @State private var priority: Exam.Priority
+    @State private var notes: String
+
+    init(exam: Exam, onSave: @escaping (String, Date, Exam.Priority, String) -> Void) {
+        self.exam = exam
+        self.onSave = onSave
+        _subject  = State(initialValue: exam.subject)
+        _date     = State(initialValue: exam.date)
+        _priority = State(initialValue: exam.priority)
+        _notes    = State(initialValue: exam.notes)
+    }
+
+    private var canSave: Bool {
+        !subject.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Tantárgy adatai") {
+                    TextField("Tantárgy neve", text: $subject)
+                    DatePicker("Időpontja", selection: $date, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "hu_HU"))
+                }
+
                 Section("Prioritás") {
                     Picker("Prioritás", selection: $priority) {
                         ForEach(Exam.Priority.allCases, id: \.self) { p in
@@ -187,13 +251,13 @@ struct AddExamSheet: View {
                     }
                     .pickerStyle(.segmented)
                 }
-                
+
                 Section("Megjegyzés (opcionális)") {
                     TextEditor(text: $notes)
                         .frame(minHeight: 80)
                 }
             }
-            .navigationTitle("Új vizsga / ZH")
+            .navigationTitle("Vizsga szerkesztése")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -201,13 +265,12 @@ struct AddExamSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Hozzáadás") {
-                        let exam = Exam(subject: subject, date: date, priority: priority, notes: notes)
-                        modelContext.insert(exam)
+                    Button("Mentés") {
+                        onSave(subject.trimmingCharacters(in: .whitespaces), date, priority, notes)
                         dismiss()
                     }
                     .fontWeight(.semibold)
-                    .disabled(subject.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(!canSave)
                 }
             }
         }
@@ -216,8 +279,8 @@ struct AddExamSheet: View {
 
 // MARK: - Empty State
 struct ExamsEmptyState: View {
-    let filter: ExamsView.ExamFilter
-    
+    let filter: ExamsViewModel.ExamFilter
+
     var body: some View {
         VStack(spacing: 16) {
             Spacer()

@@ -11,20 +11,14 @@ import SwiftData
 struct ExamsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Exam.date) private var exams: [Exam]
-
-    @State private var viewModel: ExamsViewModel?
-
-    private var vm: ExamsViewModel {
-        if let vm = viewModel { return vm }
-        fatalError("ViewModel nincs inicializálva")
-    }
+    @State private var vm: ExamsViewModel?
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 Picker("Szűrő", selection: Binding(
-                    get: { vm.selectedFilter },
-                    set: { vm.selectedFilter = $0 }
+                    get: { vm?.selectedFilter ?? .upcoming },
+                    set: { vm?.selectedFilter = $0 }
                 )) {
                     ForEach(ExamsViewModel.ExamFilter.allCases, id: \.self) {
                         Text($0.rawValue).tag($0)
@@ -35,37 +29,40 @@ struct ExamsView: View {
                 .padding(.vertical, 12)
                 .background(Color(.systemGroupedBackground))
 
-                if vm.isEmpty {
-                    ExamsEmptyState(filter: vm.selectedFilter)
+                if vm?.isEmpty ?? true {
+                    ExamsEmptyState(filter: vm?.selectedFilter ?? .upcoming)
                 } else {
                     List {
-                        ForEach(vm.filteredExams) { exam in
-                            ExamDetailRow(exam: exam, urgencyColor: vm.urgencyColor(for: exam))
-                                .swipeActions(edge: .leading) {
-                                    Button {
-                                        vm.toggleCompleted(exam)
-                                    } label: {
-                                        Label(
-                                            exam.isCompleted ? "Visszaállítás" : "Kész",
-                                            systemImage: exam.isCompleted ? "arrow.uturn.backward" : "checkmark"
-                                        )
-                                    }
-                                    .tint(.green)
+                        ForEach(vm?.filteredExams ?? []) { exam in
+                            ExamDetailRow(
+                                exam: exam,
+                                urgencyColor: vm?.urgencyColor(for: exam) ?? .secondary
+                            )
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    vm?.toggleCompleted(exam)
+                                } label: {
+                                    Label(
+                                        exam.isCompleted ? "Visszaállítás" : "Kész",
+                                        systemImage: exam.isCompleted ? "arrow.uturn.backward" : "checkmark"
+                                    )
                                 }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        vm.deleteExam(exam)
-                                    } label: {
-                                        Label("Törlés", systemImage: "trash")
-                                    }
+                                .tint(.green)
+                            }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    vm?.deleteExam(exam)
+                                } label: {
+                                    Label("Törlés", systemImage: "trash")
+                                }
 
-                                    Button {
-                                        vm.openEditSheet(for: exam)
-                                    } label: {
-                                        Label("Szerkesztés", systemImage: "pencil")
-                                    }
-                                    .tint(.indigo)
+                                Button {
+                                    vm?.openEditSheet(for: exam)
+                                } label: {
+                                    Label("Szerkesztés", systemImage: "pencil")
                                 }
+                                .tint(.indigo)
+                            }
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -77,7 +74,7 @@ struct ExamsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        vm.openAddExamSheet()
+                        vm?.openAddExamSheet()
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
@@ -86,24 +83,27 @@ struct ExamsView: View {
                 }
             }
             .sheet(isPresented: Binding(
-                get: { vm.showingAddExam },
-                set: { if !$0 { vm.dismissAddExamSheet() } }
+                get: { vm?.showingAddExam ?? false },
+                set: { if !$0 { vm?.dismissAddExamSheet() } }
             )) {
-                AddExamSheet(viewModel: vm)
+                // FIX: unwrap vm here so AddExamSheet receives a concrete ExamsViewModel
+                if let vm {
+                    AddExamSheet(viewModel: vm)
+                }
             }
             .sheet(item: Binding(
-                get: { vm.examToEdit },
-                set: { vm.examToEdit = $0 }
+                get: { vm?.examToEdit },
+                set: { vm?.examToEdit = $0 }
             )) { exam in
                 EditExamSheet(exam: exam) { subject, date, priority, notes in
-                    vm.saveEdited(exam: exam, subject: subject, date: date, priority: priority, notes: notes)
+                    vm?.saveEdited(exam: exam, subject: subject, date: date, priority: priority, notes: notes)
                 }
             }
             .onChange(of: exams, initial: true) { _, newValue in
-                if viewModel == nil {
-                    viewModel = ExamsViewModel(modelContext: modelContext)
+                if vm == nil {
+                    vm = ExamsViewModel(modelContext: modelContext)
                 }
-                viewModel?.exams = newValue
+                vm?.exams = newValue
             }
         }
     }
@@ -298,10 +298,4 @@ struct ExamsEmptyState: View {
         }
         .padding(32)
     }
-}
-
-// MARK: - Preview
-#Preview {
-    ExamsView()
-        .modelContainer(for: [Exam.self, DailyNote.self], inMemory: true)
 }

@@ -148,5 +148,21 @@ final class ExamsViewModel {
 
     private func save() {
         try? modelContext.save()
+        
+        let snapshots = exams
+            .filter { !$0.isCompleted && $0.daysUntil >= 0 }
+            .sorted { $0.date < $1.date }
+            .prefix(5)
+            .map {
+                ExamSnapshot(
+                    subject: $0.subject,
+                    date: $0.date,
+                    daysUntil: $0.daysUntil,
+                    priorityRaw: $0.priority.rawValue,
+                    isCompleted: $0.isCompleted,
+                    urgencyLevel: $0.urgencyLevel
+                )
+            }
+        SharedExamStore.save(Array(snapshots))
     }
 }

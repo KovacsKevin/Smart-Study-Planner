@@ -4,7 +4,7 @@
 //
 //  Created by Kevin on 2026. 05. 22..
 //
-
+import WidgetKit
 import SwiftUI
 import SwiftData
 
@@ -164,5 +164,6 @@ final class ExamsViewModel {
                 )
             }
         SharedExamStore.save(Array(snapshots))
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

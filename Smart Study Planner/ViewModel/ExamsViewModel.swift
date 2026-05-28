@@ -87,8 +87,8 @@ final class ExamsViewModel {
             notes: draftNotes
         )
         modelContext.insert(exam)
-        save()
         fetchExams()
+        save()
         dismissAddExamSheet()
     }
 

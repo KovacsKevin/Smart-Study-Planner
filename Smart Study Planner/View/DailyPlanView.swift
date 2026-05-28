@@ -1,9 +1,4 @@
-//
-//  DailyPlanView.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import SwiftUI
 import SwiftData
@@ -22,7 +17,7 @@ struct DailyPlanView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Date selector
+                    
                     DateScrollPicker(selectedDate: $selectedDate)
                     
                     if let note = noteForSelectedDate {
@@ -31,7 +26,7 @@ struct DailyPlanView: View {
                         EmptyDayView(date: selectedDate, onCreate: { showingAddNote = true })
                     }
                     
-                    // Past notes
+                    
                     if !notes.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Korábbi naplók")
@@ -73,7 +68,7 @@ struct DailyPlanView: View {
     }
 }
 
-// MARK: - Date Scroll Picker
+
 struct DateScrollPicker: View {
     @Binding var selectedDate: Date
     
@@ -155,13 +150,13 @@ struct DayChip: View {
     }
 }
 
-// MARK: - Daily Note Detail
+
 struct DailyNoteDetailView: View {
     let note: DailyNote
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header
+            
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(note.subject)
@@ -210,7 +205,7 @@ struct DailyNoteDetailView: View {
     }
 }
 
-// MARK: - Empty Day View
+
 struct EmptyDayView: View {
     let date: Date
     let onCreate: () -> Void
@@ -253,7 +248,7 @@ struct EmptyDayView: View {
     }
 }
 
-// MARK: - Past Note Chip
+
 struct PastNoteChip: View {
     let note: DailyNote
     let isSelected: Bool
@@ -287,7 +282,7 @@ struct PastNoteChip: View {
     }
 }
 
-// MARK: - Add Daily Note Sheet
+
 struct AddDailyNoteSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -354,7 +349,7 @@ struct AddDailyNoteSheet: View {
     }
 }
 
-// MARK: - Helpers
+
 extension View {
     func placeholder<Content: View>(when shouldShow: Bool, @ViewBuilder placeholder: () -> Content) -> some View {
         ZStack(alignment: .topLeading) {
@@ -364,7 +359,7 @@ extension View {
     }
 }
 
-// MARK: - Preview
+
 #Preview {
     DailyPlanView()
         .modelContainer(for: [Exam.self, DailyNote.self], inMemory: true)

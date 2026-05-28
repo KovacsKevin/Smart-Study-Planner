@@ -1,9 +1,4 @@
-//
-//  DashBoardViewModel.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 import SwiftUI
 import SwiftData
 
@@ -11,20 +6,20 @@ import SwiftData
 @Observable
 final class DashboardViewModel {
  
-    // MARK: Dependencies
+    
     private var modelContext: ModelContext
  
-    // MARK: State
+    
     var exams: [Exam] = []
     var notes: [DailyNote] = []
  
-    // MARK: Init
+    
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         fetchAll()
     }
  
-    // MARK: - Fetch
+    
  
     func fetchAll() {
         fetchExams()
@@ -45,7 +40,7 @@ final class DashboardViewModel {
         notes = (try? modelContext.fetch(descriptor)) ?? []
     }
  
-    // MARK: - Computed: Hero Header
+    
  
     var greeting: String {
         let hour = Calendar.current.component(.hour, from: .now)
@@ -64,7 +59,7 @@ final class DashboardViewModel {
         return f.string(from: .now)
     }
  
-    // MARK: - Computed: Quick Stats
+    
  
     var upcomingCount: Int {
         exams.filter { $0.daysUntil >= 0 && !$0.isCompleted }.count
@@ -78,7 +73,7 @@ final class DashboardViewModel {
         exams.filter(\.isCompleted).count
     }
  
-    // MARK: - Computed: Upcoming Exams (max 3)
+    
  
     var upcomingExams: [Exam] {
         exams
@@ -87,7 +82,7 @@ final class DashboardViewModel {
             .map { $0 }
     }
  
-    // MARK: - Computed: Today's Note
+    
  
     var todayNote: DailyNote? {
         notes.first { Calendar.current.isDateInToday($0.date) }
@@ -95,7 +90,7 @@ final class DashboardViewModel {
  
     var hasTodayNote: Bool { todayNote != nil }
  
-    // MARK: - Urgency color (ExamRowCard-hoz)
+    
  
     func urgencyColor(for exam: Exam) -> Color {
         switch exam.daysUntil {

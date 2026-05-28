@@ -1,9 +1,4 @@
-//
-//  ContentView.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 	
 import SwiftUI
 import SwiftData
@@ -47,18 +42,18 @@ struct ContentView: View {
     )
     let ctx = container.mainContext
 
-    // Magas prioritás
+    
     ctx.insert(Exam(subject: "Matematika", date: .now.addingTimeInterval(86400 * 2), priority: .high))
     ctx.insert(Exam(subject: "Fizika", date: .now.addingTimeInterval(86400 * 5), priority: .high))
 
-    // Közepes prioritás
+    
     ctx.insert(Exam(subject: "Történelem", date: .now.addingTimeInterval(86400 * 10), priority: .medium))
     ctx.insert(Exam(subject: "Kémia", date: .now.addingTimeInterval(86400 * 14), priority: .medium))
 
-    // Alacsony prioritás
+    
     ctx.insert(Exam(subject: "Testnevelés", date: .now.addingTimeInterval(86400 * 20), priority: .low))
 
-    // Már teljesített
+    
     let completed = Exam(subject: "Irodalom", date: .now.addingTimeInterval(-86400 * 3), priority: .medium)
     completed.isCompleted = true
     ctx.insert(completed)

@@ -1,17 +1,4 @@
-//
-//  SemesterViewModel.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
 
-
-//
-//  SemesterViewModel.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
 
 import SwiftUI
 import SwiftData
@@ -21,13 +8,13 @@ import Combine
 @Observable
 final class SemesterViewModel {
 
-    // MARK: - Input (set by the View after @Query delivers results)
+    
 
     var exams: [Exam] = [] {
         didSet { recalculate() }
     }
 
-    // MARK: - Derived state (read-only for the View)
+    
 
     private(set) var totalExams: Int = 0
     private(set) var completedExams: Int = 0
@@ -37,10 +24,10 @@ final class SemesterViewModel {
     private(set) var mediumPriorityCount: Int = 0
     private(set) var lowPriorityCount: Int = 0
 
-    /// Exams grouped and sorted by month, e.g. [("2026. május", [Exam, …]), …]
+    
     private(set) var examsByMonth: [(month: String, exams: [Exam])] = []
 
-    // MARK: - Helpers
+    
 
     var progressLabel: String {
         guard totalExams > 0 else { return "Még nincsenek vizsgák" }
@@ -49,7 +36,7 @@ final class SemesterViewModel {
 
     var progressPercent: Int { Int(progress * 100) }
 
-    // MARK: - Private recalculation
+   
 
     private func recalculate() {
         totalExams     = exams.count
@@ -85,7 +72,7 @@ final class SemesterViewModel {
             }
     }
 
-    // MARK: - Formatters (cached as local statics to avoid repeated allocation)
+    
 
     private func monthFormatter() -> DateFormatter {
         let f = DateFormatter()
@@ -94,7 +81,7 @@ final class SemesterViewModel {
         return f
     }
 
-    // MARK: - Dot color helper (used by TimelineExamRow)
+    
 
     func dotColor(for exam: Exam) -> Color {
         if exam.isCompleted { return .green }
@@ -105,7 +92,7 @@ final class SemesterViewModel {
         }
     }
 
-    // MARK: - Short date string helper (used by TimelineExamRow)
+    
 
     func shortDateString(for exam: Exam) -> String {
         let f = DateFormatter()

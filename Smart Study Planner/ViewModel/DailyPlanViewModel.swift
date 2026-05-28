@@ -11,31 +11,31 @@ import SwiftData
 @Observable
 final class DailyPlanViewModel {
  
-    // MARK: Dependencies
+    
     private var modelContext: ModelContext
  
-    // MARK: State – dátumválasztó
+    
     var selectedDate: Date = Calendar.current.startOfDay(for: .now)
  
-    // MARK: State – naplók
+    
     var allNotes: [DailyNote] = []
  
-    // MARK: State – sheet
+    
     var showingAddNote = false
  
-    // MARK: State – AddNoteSheet mezők
+    
     var draftSubject  = ""
     var draftContent  = ""
     var draftGoalText = ""
     var draftGoals: [String] = []
  
-    // MARK: Init
+    
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         fetchNotes()
     }
  
-    // MARK: - Fetch
+    
  
     func fetchNotes() {
         let descriptor = FetchDescriptor<DailyNote>(
@@ -44,28 +44,28 @@ final class DailyPlanViewModel {
         allNotes = (try? modelContext.fetch(descriptor)) ?? []
     }
  
-    // MARK: - Computed: kiválasztott nap bejegyzése
+    
  
-    /// A DateScrollPicker által kiválasztott naphoz tartozó napló (vagy nil)
+   
     var noteForSelectedDate: DailyNote? {
         allNotes.first {
             Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
         }
     }
  
-    /// Igaz, ha a kiválasztott nap a mai nap
+    
     var isSelectedDateToday: Bool {
         Calendar.current.isDateInToday(selectedDate)
     }
  
-    // MARK: - Computed: korábbi naplók (horizontal scroll)
+    
  
-    /// Legfeljebb 10 korábbi bejegyzés (AddNote sheet-hez és PastNoteChip-hez)
+    
     var recentNotes: [DailyNote] {
         Array(allNotes.prefix(10))
     }
  
-    // MARK: - Dátum kiválasztása
+    
  
     func selectDate(_ date: Date) {
         withAnimation(.spring(duration: 0.3)) {
@@ -77,7 +77,7 @@ final class DailyPlanViewModel {
         selectDate(note.date)
     }
  
-    // MARK: - Sheet megnyitása / zárása
+    
  
     func openAddNoteSheet() {
         resetDraft()
@@ -89,7 +89,7 @@ final class DailyPlanViewModel {
         resetDraft()
     }
  
-    // MARK: - Draft kezelés (AddDailyNoteSheet)
+    
  
     private func resetDraft() {
         draftSubject  = ""
@@ -98,7 +98,7 @@ final class DailyPlanViewModel {
         draftGoals    = []
     }
  
-    /// "Hozzáad" gomb a goal inputhoz
+    
     func addDraftGoal() {
         let trimmed = draftGoalText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
@@ -110,12 +110,12 @@ final class DailyPlanViewModel {
         draftGoals.remove(atOffsets: offsets)
     }
  
-    /// Igaz, ha a "Mentés" gomb aktív
+    
     var canSaveDraft: Bool {
         !draftSubject.trimmingCharacters(in: .whitespaces).isEmpty
     }
  
-    // MARK: - Mentés
+    
  
     func saveDraftNote(for date: Date) {
         guard canSaveDraft else { return }
@@ -131,7 +131,7 @@ final class DailyPlanViewModel {
         dismissAddNoteSheet()
     }
  
-    // MARK: - Törlés
+    
  
     func deleteNote(_ note: DailyNote) {
         modelContext.delete(note)
@@ -145,7 +145,7 @@ final class DailyPlanViewModel {
         fetchNotes()
     }
  
-    // MARK: - Persistence
+    
  
     private func save() {
         try? modelContext.save()

@@ -1,9 +1,4 @@
-//
-//  DailyNote.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 import SwiftData
 import Foundation
 

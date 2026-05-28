@@ -11,10 +11,10 @@ import UserNotifications
 @Observable
 final class NotificationsViewModel {
 
-    // MARK: Dependencies
+    
     private var modelContext: ModelContext
 
-    // MARK: - UserDefaults kulcsok
+    
     private enum UDKey {
         static let weeklyEnabled   = "notif_weekly_enabled"
         static let dailyEnabled    = "notif_daily_enabled"
@@ -24,7 +24,7 @@ final class NotificationsViewModel {
         static let customTimes     = "notif_custom_exam_times" // JSON: [String: Double]
     }
 
-    // MARK: - Segédfüggvények a perzisztenciához
+    
     private static func loadDate(key: String, defaultHour: Int, defaultMinute: Int) -> Date {
         if let stored = UserDefaults.standard.object(forKey: key) as? Date { return stored }
         return Calendar.current.date(from: DateComponents(hour: defaultHour, minute: defaultMinute)) ?? Date()
@@ -50,7 +50,7 @@ final class NotificationsViewModel {
         }
     }
 
-    // MARK: - Beállítások (automatikus mentéssel)
+    
     var weeklyReminderEnabled: Bool {
         didSet {
             UserDefaults.standard.set(weeklyReminderEnabled, forKey: UDKey.weeklyEnabled)
@@ -89,13 +89,13 @@ final class NotificationsViewModel {
         }
     }
 
-    // MARK: Vizsgák
+    
     var exams: [Exam] = []
 
-    // MARK: Engedély
+    
     var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
 
-    // MARK: Init – értékek betöltése UserDefaults-ból
+    
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         let ud = UserDefaults.standard
@@ -111,30 +111,30 @@ final class NotificationsViewModel {
         Task { await checkAuthorizationStatus() }
     }
 
-    // MARK: - Fetch
+    
 
     func fetchExams() {
         let descriptor = FetchDescriptor<Exam>(sortBy: [SortDescriptor(\.date)])
         exams = (try? modelContext.fetch(descriptor)) ?? []
     }
 
-    // MARK: - Computed
+    
 
     var upcomingWithReminders: [Exam] {
         exams.filter { !$0.isCompleted && $0.daysUntil >= 0 && $0.daysUntil <= 14 }
     }
 
-    /// Az a nap, amikor az emlékeztető kimegy (examReminderDays nappal korábban)
+    
     func reminderDate(for exam: Exam) -> Date {
         Calendar.current.date(byAdding: .day, value: -examReminderDays, to: exam.date) ?? exam.date
     }
 
-    /// Az az IDŐPONT, amit a felhasználó beállított erre a vizsgára (vagy alapértelmezett)
+    
     func reminderTime(for exam: Exam) -> Date {
         customExamReminderTimes[exam.id] ?? dailyReminderTime
     }
 
-    /// A teljes dátum+idő, amikor a push kimegy
+    
     func reminderDateTime(for exam: Exam) -> Date {
         let day = reminderDate(for: exam)
         let time = reminderTime(for: exam)
@@ -167,7 +167,7 @@ final class NotificationsViewModel {
         "Az értesítések \(examReminderDays) nappal a vizsga előtt lesznek kiküldve."
     }
 
-    // MARK: - Engedélykérés
+    
 
     func requestAuthorizationIfNeeded() async {
         let center = UNUserNotificationCenter.current()
@@ -199,7 +199,7 @@ final class NotificationsViewModel {
 
     var isAuthorized: Bool { notificationAuthStatus == .authorized }
 
-    // MARK: - Ütemezés
+    
 
     func rescheduleAllExamReminders() {
         guard isAuthorized else { return }
@@ -284,8 +284,8 @@ final class NotificationsViewModel {
         "exam_reminder_\(exam.id.uuidString)"
     }
 
-    // MARK: - Tesztelés (fejlesztés közbeni gyors teszt!)
-    /// Hívd meg egy gombból, és 10 másodperc múlva kapsz egy teszt-értesítést.
+    
+    
     func scheduleTestNotification() {
         guard isAuthorized else {
             Task { await requestAuthorizationIfNeeded() }

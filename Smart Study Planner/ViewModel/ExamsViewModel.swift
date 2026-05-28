@@ -1,9 +1,4 @@
-//
-//  ExamsViewModel.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 import WidgetKit
 import SwiftUI
 import SwiftData
@@ -12,37 +7,37 @@ import SwiftData
 @Observable
 final class ExamsViewModel {
 
-    // MARK: - Dependencies
+    
     private var modelContext: ModelContext
 
-    // MARK: - State – lista
+    
     var exams: [Exam] = []
     var selectedFilter: ExamFilter = .upcoming
 
-    // MARK: - State – sheetek
+    
     var showingAddExam  = false
-    var examToEdit: Exam? = nil   // nil = zárva, non-nil = EditExamSheet nyitva
+    var examToEdit: Exam? = nil
 
-    // MARK: - State – AddExamSheet mezők
+    
     var draftSubject  = ""
     var draftDate     = Date()
     var draftPriority: Exam.Priority = .medium
     var draftNotes    = ""
 
-    // MARK: - Init
+    
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         fetchExams()
     }
 
-    // MARK: - Fetch
+   
 
     func fetchExams() {
         let descriptor = FetchDescriptor<Exam>(sortBy: [SortDescriptor(\.date)])
         exams = (try? modelContext.fetch(descriptor)) ?? []
     }
 
-    // MARK: - Filter
+    
 
     enum ExamFilter: String, CaseIterable {
         case upcoming  = "Közelgő"
@@ -60,7 +55,7 @@ final class ExamsViewModel {
 
     var isEmpty: Bool { filteredExams.isEmpty }
 
-    // MARK: - Add sheet
+    
 
     func openAddExamSheet() {
         resetDraft()
@@ -97,10 +92,24 @@ final class ExamsViewModel {
         dismissAddExamSheet()
     }
 
-    // MARK: - Edit sheet
+    
 
     func openEditSheet(for exam: Exam) {
         examToEdit = exam
+    }
+
+    
+
+    func deleteExam(_ exam: Exam) {
+        modelContext.delete(exam)
+        fetchExams()
+        save()
+    }
+
+    func toggleCompleted(_ exam: Exam) {
+        exam.isCompleted.toggle()
+        fetchExams()
+        save()
     }
 
     func saveEdited(exam: Exam, subject: String, date: Date, priority: Exam.Priority, notes: String) {
@@ -108,32 +117,19 @@ final class ExamsViewModel {
         exam.date     = date
         exam.priority = priority
         exam.notes    = notes
-        save()
         fetchExams()
+        save()
         examToEdit = nil
-    }
-
-    // MARK: - CRUD
-
-    func toggleCompleted(_ exam: Exam) {
-        exam.isCompleted.toggle()
-        save()
-        fetchExams()
-    }
-
-    func deleteExam(_ exam: Exam) {
-        modelContext.delete(exam)
-        save()
-        fetchExams()
     }
 
     func deleteExams(at offsets: IndexSet) {
         offsets.map { filteredExams[$0] }.forEach { modelContext.delete($0) }
-        save()
         fetchExams()
+        save()
+        
     }
 
-    // MARK: - Urgency color
+    
 
     func urgencyColor(for exam: Exam) -> Color {
         if exam.isCompleted { return .green }
@@ -144,7 +140,7 @@ final class ExamsViewModel {
         }
     }
 
-    // MARK: - Persistence
+    
 
     private func save() {
         try? modelContext.save()

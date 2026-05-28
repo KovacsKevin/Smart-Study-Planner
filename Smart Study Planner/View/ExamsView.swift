@@ -1,9 +1,4 @@
-//
-//  ExamsView.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import SwiftUI
 import SwiftData
@@ -86,7 +81,7 @@ struct ExamsView: View {
                 get: { vm?.showingAddExam ?? false },
                 set: { if !$0 { vm?.dismissAddExamSheet() } }
             )) {
-                // FIX: unwrap vm here so AddExamSheet receives a concrete ExamsViewModel
+                
                 if let vm {
                     AddExamSheet(viewModel: vm)
                 }
@@ -109,7 +104,7 @@ struct ExamsView: View {
     }
 }
 
-// MARK: - Exam Detail Row
+
 struct ExamDetailRow: View {
     let exam: Exam
     let urgencyColor: Color
@@ -164,7 +159,7 @@ struct ExamDetailRow: View {
     }
 }
 
-// MARK: - Add Exam Sheet
+
 struct AddExamSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: ExamsViewModel
@@ -209,7 +204,7 @@ struct AddExamSheet: View {
     }
 }
 
-// MARK: - Edit Exam Sheet
+
 struct EditExamSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -277,7 +272,7 @@ struct EditExamSheet: View {
     }
 }
 
-// MARK: - Empty State
+
 struct ExamsEmptyState: View {
     let filter: ExamsViewModel.ExamFilter
 

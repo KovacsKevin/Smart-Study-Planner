@@ -1,9 +1,4 @@
-//
-//  EditExamSheet.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import SwiftUI
 import SwiftData
@@ -58,7 +53,7 @@ struct EditexamSheet: View {
                 Section {
                     Toggle("Teljesítve", isOn: Binding(
                         get: { exam.isCompleted },
-                        set: { _ in }   // toggleCompleted az ExamsViewModel-en keresztül kezelendő
+                        set: { _ in }   
                     ))
                     .disabled(true)
                     .foregroundStyle(.secondary)

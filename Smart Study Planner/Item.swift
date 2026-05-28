@@ -1,9 +1,4 @@
-//
-//  Item.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import Foundation
 import SwiftData

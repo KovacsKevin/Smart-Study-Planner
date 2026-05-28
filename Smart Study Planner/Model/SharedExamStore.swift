@@ -13,7 +13,7 @@ final class SharedExamStore {
     static let suiteName = "group.com.kevin.smartstudyplanner"
     static let key = "widget_exams"
 
-    static func save(_ snapshots: [ExamSnapshot]) {  // ← ExamSnapshot, nem Exam
+    static func save(_ snapshots: [ExamSnapshot]) {  
         if let data = try? JSONEncoder().encode(snapshots) {
             UserDefaults(suiteName: suiteName)?.set(data, forKey: key)
         }

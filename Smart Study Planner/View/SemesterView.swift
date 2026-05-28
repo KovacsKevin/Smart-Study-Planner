@@ -1,9 +1,4 @@
-//
-//  SemesterView.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import SwiftUI
 import SwiftData
@@ -48,7 +43,7 @@ struct SemesterView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Félév előnézete")
             .navigationBarTitleDisplayMode(.large)
-            // Sync @Query results into the ViewModel whenever they change
+            
             .onChange(of: exams, initial: true) { _, newValue in
                 viewModel.exams = newValue
             }
@@ -56,7 +51,7 @@ struct SemesterView: View {
     }
 }
 
-// MARK: - Semester Progress Card
+
 struct SemesterProgressCard: View {
     let completed: Int
     let total: Int
@@ -113,7 +108,7 @@ struct SemesterProgressCard: View {
     }
 }
 
-// MARK: - Priority Breakdown Card
+
 struct PriorityBreakdownCard: View {
     let highCount: Int
     let mediumCount: Int
@@ -163,7 +158,7 @@ struct PriorityBar: View {
     }
 }
 
-// MARK: - Month Section
+
 struct MonthSection: View {
     let month: String
     let exams: [Exam]
@@ -190,8 +185,7 @@ struct TimelineExamRow: View {
     let exam: Exam
     let isLast: Bool
 
-    // The ViewModel helpers are stateless pure functions,
-    // so it's fine to call them directly here as well.
+   
     private var dateString: String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "hu_HU")
@@ -250,7 +244,7 @@ struct TimelineExamRow: View {
     }
 }
 
-// MARK: - Preview
+
 #Preview {
     SemesterView()
         .modelContainer(for: [Exam.self, DailyNote.self], inMemory: true)

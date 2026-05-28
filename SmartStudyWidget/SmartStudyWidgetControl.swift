@@ -1,9 +1,4 @@
-//
-//  SmartStudyWidgetControl.swift
-//  SmartStudyWidget
-//
-//  Created by Kevin on 2026. 05. 27..
-//
+
 
 import AppIntents
 import SwiftUI
@@ -35,7 +30,7 @@ extension SmartStudyWidgetControl {
         }
 
         func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
+            let isRunning = true
             return isRunning
         }
     }
@@ -48,7 +43,7 @@ struct StartTimerIntent: SetValueIntent {
     var value: Bool
 
     func perform() async throws -> some IntentResult {
-        // Start / stop the timer based on `value`.
+        
         return .result()
     }
 }

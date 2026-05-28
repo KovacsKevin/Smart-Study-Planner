@@ -1,9 +1,4 @@
-//
-//  DashBoardView.swift
-//  Smart Study Planner
-//
-//  Created by Kevin on 2026. 05. 22..
-//
+
 
 import SwiftUI
 import SwiftData
@@ -25,13 +20,13 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     
-                    // Hero header
+                    
                     HeroHeaderView()
                     
-                    // Quick stats
+                    
                     QuickStatsRow(exams: exams)
                     
-                    // Today's study note
+                    
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeader(title: "Mai tanulási napló", icon: "note.text")
                         
@@ -42,7 +37,7 @@ struct DashboardView: View {
                         }
                     }
                     
-                    // Upcoming exams
+                    
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeader(title: "Közelgő vizsgák", icon: "calendar.badge.exclamationmark")
                         
@@ -65,7 +60,7 @@ struct DashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        // profile action
+                        
                     } label: {
                         Image(systemName: "person.circle.fill")
                             .font(.title2)
@@ -77,7 +72,7 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Hero Header
+
 struct HeroHeaderView: View {
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -110,7 +105,7 @@ struct HeroHeaderView: View {
     }
 }
 
-// MARK: - Quick Stats Row
+
 struct QuickStatsRow: View {
     let exams: [Exam]
     
@@ -155,7 +150,7 @@ struct StatCard: View {
     }
 }
 
-// MARK: - Section Header
+
 struct SectionHeader: View {
     let title: String
     let icon: String
@@ -172,7 +167,7 @@ struct SectionHeader: View {
     }
 }
 
-// MARK: - Today Note Card
+
 struct TodayNoteCard: View {
     let note: DailyNote
     
@@ -226,7 +221,7 @@ struct EmptyNoteCard: View {
     }
 }
 
-// MARK: - Exam Row Card
+
 struct ExamRowCard: View {
     let exam: Exam
     

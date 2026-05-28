@@ -1,9 +1,4 @@
-//
-//  SmartStudyWidgetBundle.swift
-//  SmartStudyWidget
-//
-//  Created by Kevin on 2026. 05. 27..
-//
+
 
 import WidgetKit
 import SwiftUI

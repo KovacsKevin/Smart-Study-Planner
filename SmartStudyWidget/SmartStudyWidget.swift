@@ -1,13 +1,13 @@
 import WidgetKit
 import SwiftUI
 
-// MARK: - Timeline Entry
+
 struct ExamEntry: TimelineEntry {
     let date: Date
     let exams: [ExamSnapshot]
 }
 
-// MARK: - Provider
+
 struct ExamWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> ExamEntry {
         ExamEntry(date: .now, exams: [
@@ -33,7 +33,7 @@ struct ExamWidgetProvider: TimelineProvider {
     }
 }
 
-// MARK: - Urgency Color
+
 func urgencyColor(daysUntil: Int) -> Color {
     switch daysUntil {
     case ..<1:  return .red
@@ -42,7 +42,7 @@ func urgencyColor(daysUntil: Int) -> Color {
     }
 }
 
-// MARK: - Small Widget (2x2)
+
 struct SmallWidgetView: View {
     let entry: ExamEntry
 
@@ -89,7 +89,7 @@ struct SmallWidgetView: View {
     }
 }
 
-// MARK: - Medium Widget (4x2)
+
 struct MediumWidgetView: View {
     let entry: ExamEntry
 
@@ -141,16 +141,14 @@ struct MediumWidgetView: View {
     }
 }
 
-// MARK: - Widget
+
 struct SmartStudyWidget: Widget {
     let kind = "SmartStudyWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ExamWidgetProvider()) { entry in
-            ViewThatFits {
-                SmallWidgetView(entry: entry)
-                MediumWidgetView(entry: entry)
-            }
+            SmallWidgetView(entry: entry)
+                .containerBackground(.background, for: .widget)
         }
         .configurationDisplayName("Vizsgák")
         .description("Következő vizsgáid egy pillantásra.")

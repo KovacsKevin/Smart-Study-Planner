@@ -1,7 +1,4 @@
-//
-//  NotificationsView.swift
-//  Smart Study Planner
-//
+
 
 import SwiftUI
 import SwiftData
@@ -9,7 +6,7 @@ import SwiftData
 struct NotificationsView: View {
     @Environment(\.modelContext) private var modelContext
 
-    // ViewModel – ez tartalmaz MINDEN logikát
+    
     @State private var vm: NotificationsViewModel?
 
     var body: some View {
@@ -21,7 +18,7 @@ struct NotificationsView: View {
             }
         }
         .task {
-            // ViewModel létrehozása és engedélykérés
+            
             let newVM = NotificationsViewModel(modelContext: modelContext)
             await newVM.requestAuthorizationIfNeeded()
             vm = newVM
@@ -29,14 +26,14 @@ struct NotificationsView: View {
     }
 }
 
-// MARK: - Fő tartalom (külön view, hogy a vm mindig létezzen)
+
 private struct NotificationsContentView: View {
     @Bindable var vm: NotificationsViewModel
 
     var body: some View {
         NavigationStack {
             List {
-                // MARK: Engedély banner (ha nincs megadva)
+                
                 if !vm.isAuthorized {
                     Section {
                         HStack(spacing: 12) {
@@ -62,7 +59,7 @@ private struct NotificationsContentView: View {
                     }
                 }
 
-                // MARK: Általános beállítások
+                
                 Section {
                     Toggle(isOn: $vm.weeklyReminderEnabled) {
                         Label {
@@ -109,7 +106,7 @@ private struct NotificationsContentView: View {
                     Text("Általános beállítások")
                 }
 
-                // MARK: Vizsga-emlékeztető előre hozása
+                
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
@@ -134,7 +131,7 @@ private struct NotificationsContentView: View {
                     }
                     .padding(.vertical, 4)
 
-                    // Alapértelmezett időpont minden vizsgához (ha nincs egyedi)
+                    
                     DatePicker(
                         "Alapértelmezett időpont",
                         selection: $vm.dailyReminderTime,
@@ -148,7 +145,7 @@ private struct NotificationsContentView: View {
                     Text("Az értesítések \(vm.examReminderDays) nappal a vizsga előtt, a beállított időpontban mennek ki.")
                 }
 
-                // MARK: Beütemezett értesítések (egyedi időpont per vizsga)
+                
                 if !vm.upcomingWithReminders.isEmpty {
                     Section {
                         ForEach(vm.upcomingWithReminders) { exam in
@@ -169,7 +166,7 @@ private struct NotificationsContentView: View {
                     }
                 }
 
-                // MARK: Teszt gomb (fejlesztéshez, kivehetod élesben)
+                
                 #if DEBUG
                 Section {
                     Button {
@@ -208,7 +205,7 @@ private struct NotificationsContentView: View {
     }
 }
 
-// MARK: - Scheduled Reminder Row (egyedi időpont beállítással)
+
 struct ScheduledReminderRow: View {
     let exam: Exam
     let reminderDateTime: Date
@@ -249,7 +246,7 @@ struct ScheduledReminderRow: View {
 
                 Spacer()
 
-                // Egyedi időpont gomb
+                
                 Button {
                     showTimePicker.toggle()
                 } label: {
@@ -267,7 +264,7 @@ struct ScheduledReminderRow: View {
             }
             .padding(.vertical, 2)
 
-            // Kinyíló egyedi időpont-választó
+            
             if showTimePicker {
                 Divider().padding(.vertical, 4)
                 HStack {
@@ -288,7 +285,7 @@ struct ScheduledReminderRow: View {
     }
 }
 
-// MARK: - Notification Tip Row
+
 struct NotificationTipRow: View {
     let icon: String
     let iconColor: Color
@@ -313,7 +310,7 @@ struct NotificationTipRow: View {
     }
 }
 
-// MARK: - Preview
+
 #Preview {
     NotificationsView()
         .modelContainer(for: [Exam.self, DailyNote.self], inMemory: true)

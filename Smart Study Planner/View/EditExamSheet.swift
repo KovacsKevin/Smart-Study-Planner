@@ -1,10 +1,9 @@
-
-
 import SwiftUI
 import SwiftData
 
 struct EditexamSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     let exam: Exam
     let onSave: (String, Date, Exam.Priority, String) -> Void
@@ -29,62 +28,140 @@ struct EditexamSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Tantárgy adatai") {
-                    TextField("Tantárgy neve", text: $subject)
-                    DatePicker("Időpontja", selection: $date, displayedComponents: .date)
-                        .environment(\.locale, Locale(identifier: "hu_HU"))
-                }
+            if horizontalSizeClass == .regular {
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        HStack(alignment: .top, spacing: 20) {
+                            
+                            VStack(spacing: 16) {
+                                iPadSection(title: "Tantárgy adatai") {
+                                    VStack(spacing: 12) {
+                                        TextField("Tantárgy neve", text: $subject)
+                                            .textFieldStyle(.roundedBorder)
+                                        DatePicker("Időpontja", selection: $date, displayedComponents: .date)
+                                            .environment(\.locale, Locale(identifier: "hu_HU"))
+                                    }
+                                }
 
-                Section("Prioritás") {
-                    Picker("Prioritás", selection: $priority) {
-                        ForEach(Exam.Priority.allCases, id: \.self) { p in
-                            Label(p.rawValue, systemImage: p.icon).tag(p)
+                                iPadSection(title: "Prioritás") {
+                                    Picker("Prioritás", selection: $priority) {
+                                        ForEach(Exam.Priority.allCases, id: \.self) { p in
+                                            Label(p.rawValue, systemImage: p.icon).tag(p)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            
+                            VStack(spacing: 16) {
+                                iPadSection(title: "Megjegyzés (opcionális)") {
+                                    TextEditor(text: $notes)
+                                        .frame(minHeight: 150)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+
+                                iPadSection(title: "Állapot") {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Toggle("Teljesítve", isOn: Binding(
+                                            get: { exam.isCompleted },
+                                            set: { _ in }
+                                        ))
+                                        .disabled(true)
+                                        .foregroundStyle(.secondary)
+                                        Text("A teljesítés állapotát a listán swipe-pal változtathatod.")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .padding(32)
                 }
+                .background(Color(.systemGroupedBackground))
+            } else {
+                
+                Form {
+                    Section("Tantárgy adatai") {
+                        TextField("Tantárgy neve", text: $subject)
+                        DatePicker("Időpontja", selection: $date, displayedComponents: .date)
+                            .environment(\.locale, Locale(identifier: "hu_HU"))
+                    }
 
-                Section("Megjegyzés (opcionális)") {
-                    TextEditor(text: $notes)
-                        .frame(minHeight: 80)
-                }
+                    Section("Prioritás") {
+                        Picker("Prioritás", selection: $priority) {
+                            ForEach(Exam.Priority.allCases, id: \.self) { p in
+                                Label(p.rawValue, systemImage: p.icon).tag(p)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
 
-                Section {
-                    Toggle("Teljesítve", isOn: Binding(
-                        get: { exam.isCompleted },
-                        set: { _ in }   
-                    ))
-                    .disabled(true)
-                    .foregroundStyle(.secondary)
+                    Section("Megjegyzés (opcionális)") {
+                        TextEditor(text: $notes)
+                            .frame(minHeight: 80)
+                    }
 
-                    Text("A teljesítés állapotát a listán swipe-pal változtathatod.")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    Section {
+                        Toggle("Teljesítve", isOn: Binding(
+                            get: { exam.isCompleted },
+                            set: { _ in }
+                        ))
+                        .disabled(true)
+                        .foregroundStyle(.secondary)
+                        Text("A teljesítés állapotát a listán swipe-pal változtathatod.")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
             }
-            .navigationTitle("Vizsga szerkesztése")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Mégse") { dismiss() }
-                        .foregroundStyle(.secondary)
+        }
+        .navigationTitle("Vizsga szerkesztése")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Mégse") { dismiss() }
+                    .foregroundStyle(.secondary)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Mentés") {
+                    onSave(
+                        subject.trimmingCharacters(in: .whitespaces),
+                        date,
+                        priority,
+                        notes
+                    )
+                    dismiss()
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Mentés") {
-                        onSave(
-                            subject.trimmingCharacters(in: .whitespaces),
-                            date,
-                            priority,
-                            notes
-                        )
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(!canSave)
-                }
+                .fontWeight(.semibold)
+                .disabled(!canSave)
             }
         }
     }
 }
 
+
+private struct iPadSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+            content()
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        }
+    }
+}

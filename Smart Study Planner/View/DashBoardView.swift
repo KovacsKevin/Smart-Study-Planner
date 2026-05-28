@@ -5,6 +5,8 @@ struct DashboardView: View {
     @Query(sort: \Exam.date) private var exams: [Exam]
     @Query(sort: \DailyNote.date, order: .reverse) private var notes: [DailyNote]
     
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     private var upcomingExams: [Exam] {
         exams.filter { $0.daysUntil >= 0 && !$0.isCompleted }.prefix(3).map { $0 }
     }
@@ -16,32 +18,73 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    HeroHeaderView()
-                    QuickStatsRow(exams: exams)
+                if horizontalSizeClass == .regular {
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionHeader(title: "Mai tanulási napló", icon: "note.text")
-                        if let note = todayNote {
-                            TodayNoteCard(note: note)
-                        } else {
-                            EmptyNoteCard()
+                    VStack(alignment: .leading, spacing: 28) {
+                        HeroHeaderView()
+                        
+                        QuickStatsRow(exams: exams)
+                            .frame(maxWidth: 700)
+                        
+                        HStack(alignment: .top, spacing: 20) {
+                            
+                            VStack(alignment: .leading, spacing: 20) {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    SectionHeader(title: "Mai tanulási napló", icon: "note.text")
+                                    if let note = todayNote {
+                                        TodayNoteCard(note: note)
+                                    } else {
+                                        EmptyNoteCard()
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(title: "Közelgő vizsgák", icon: "calendar.badge.exclamationmark")
+                                if upcomingExams.isEmpty {
+                                    EmptyExamsCard()
+                                } else {
+                                    ForEach(upcomingExams) { exam in
+                                        ExamRowCard(exam: exam)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                     }
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 32)
+                } else {
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        SectionHeader(title: "Közelgő vizsgák", icon: "calendar.badge.exclamationmark")
-                        if upcomingExams.isEmpty {
-                            EmptyExamsCard()
-                        } else {
-                            ForEach(upcomingExams) { exam in
-                                ExamRowCard(exam: exam)
+                    VStack(alignment: .leading, spacing: 24) {
+                        HeroHeaderView()
+                        QuickStatsRow(exams: exams)
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader(title: "Mai tanulási napló", icon: "note.text")
+                            if let note = todayNote {
+                                TodayNoteCard(note: note)
+                            } else {
+                                EmptyNoteCard()
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            SectionHeader(title: "Közelgő vizsgák", icon: "calendar.badge.exclamationmark")
+                            if upcomingExams.isEmpty {
+                                EmptyExamsCard()
+                            } else {
+                                ForEach(upcomingExams) { exam in
+                                    ExamRowCard(exam: exam)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Smart Study Planner")

@@ -8,72 +8,183 @@ struct DailyPlanView: View {
     @State private var noteToEdit: DailyNote? = nil
     @State private var selectedDate = Date()
     
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     private var noteForSelectedDate: DailyNote? {
         notes.first { Calendar.current.isDate($0.date, inSameDayAs: selectedDate) }
     }
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    DateScrollPicker(selectedDate: $selectedDate)
-                    
-                    if let note = noteForSelectedDate {
-                        DailyNoteDetailView(
-                            note: note,
-                            onEdit: { noteToEdit = note },
-                            onDelete: {
-                                modelContext.delete(note)
-                                try? modelContext.save()
+            if horizontalSizeClass == .regular {
+                // iPad layout
+                HStack(alignment: .top, spacing: 0) {
+                    // Bal oldal – dátumválasztó + napló
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            DateScrollPicker(selectedDate: $selectedDate)
+                            
+                            if let note = noteForSelectedDate {
+                                DailyNoteDetailView(
+                                    note: note,
+                                    onEdit: { noteToEdit = note },
+                                    onDelete: {
+                                        modelContext.delete(note)
+                                        try? modelContext.save()
+                                    }
+                                )
+                            } else {
+                                EmptyDayView(date: selectedDate, onCreate: { showingAddNote = true })
                             }
-                        )
-                    } else {
-                        EmptyDayView(date: selectedDate, onCreate: { showingAddNote = true })
+                        }
+                        .padding(.bottom, 32)
                     }
+                    .frame(maxWidth: .infinity)
                     
-                    if !notes.isEmpty {
+                    Divider()
+                    
+                    // Jobb oldal – korábbi naplók
+                    ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Korábbi naplók")
                                 .font(.headline)
                                 .padding(.horizontal, 20)
+                                .padding(.top, 16)
                             
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(notes.prefix(10)) { note in
-                                        PastNoteChip(
+                            if notes.isEmpty {
+                                Text("Még nincs napló bejegyzés.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 20)
+                            } else {
+                                VStack(spacing: 10) {
+                                    ForEach(notes.prefix(20)) { note in
+                                        PastNoteRow(
                                             note: note,
                                             isSelected: Calendar.current.isDate(note.date, inSameDayAs: selectedDate)
                                         ) {
                                             selectedDate = note.date
                                         }
+                                        .padding(.horizontal, 20)
                                     }
                                 }
-                                .padding(.horizontal, 20)
+                            }
+                        }
+                        .padding(.bottom, 32)
+                    }
+                    .frame(width: 280)
+                    .background(Color(.secondarySystemGroupedBackground))
+                }
+            } else {
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        DateScrollPicker(selectedDate: $selectedDate)
+                        
+                        if let note = noteForSelectedDate {
+                            DailyNoteDetailView(
+                                note: note,
+                                onEdit: { noteToEdit = note },
+                                onDelete: {
+                                    modelContext.delete(note)
+                                    try? modelContext.save()
+                                }
+                            )
+                        } else {
+                            EmptyDayView(date: selectedDate, onCreate: { showingAddNote = true })
+                        }
+                        
+                        if !notes.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Korábbi naplók")
+                                    .font(.headline)
+                                    .padding(.horizontal, 20)
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 12) {
+                                        ForEach(notes.prefix(10)) { note in
+                                            PastNoteChip(
+                                                note: note,
+                                                isSelected: Calendar.current.isDate(note.date, inSameDayAs: selectedDate)
+                                            ) {
+                                                selectedDate = note.date
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                }
                             }
                         }
                     }
-                }
-                .padding(.bottom, 32)
-            }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Napi napló")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingAddNote = true
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .foregroundStyle(.indigo)
-                    }
+                    .padding(.bottom, 32)
                 }
             }
-            .sheet(isPresented: $showingAddNote) {
-                AddDailyNoteSheet(defaultDate: selectedDate)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Napi napló")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingAddNote = true
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .foregroundStyle(.indigo)
+                }
             }
-            .sheet(item: $noteToEdit) { note in
-                EditDailyNoteSheet(note: note)
+        }
+        .sheet(isPresented: $showingAddNote) {
+            AddDailyNoteSheet(defaultDate: selectedDate)
+        }
+        .sheet(item: $noteToEdit) { note in
+            EditDailyNoteSheet(note: note)
+        }
+    }
+}
+
+
+struct PastNoteRow: View {
+    let note: DailyNote
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private var dateString: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "hu_HU")
+        f.dateFormat = "yyyy. MMM d., EEEE"
+        return f.string(from: note.date)
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isSelected ? Color.indigo : Color(.systemGray4))
+                    .frame(width: 4)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(note.subject)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(isSelected ? .indigo : .primary)
+                        .lineLimit(1)
+                    Text(dateString)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .foregroundStyle(.indigo)
+                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.indigo.opacity(0.08) : Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 }
@@ -458,7 +569,7 @@ struct AddDailyNoteSheet: View {
     }
 }
 
-
+// MARK: - Helpers
 extension View {
     func placeholder<Content: View>(when shouldShow: Bool, @ViewBuilder placeholder: () -> Content) -> some View {
         ZStack(alignment: .topLeading) {

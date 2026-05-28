@@ -1,56 +1,103 @@
-
-
 import SwiftUI
 import SwiftData
 
 struct SemesterView: View {
     @Query private var exams: [Exam]
     @State private var viewModel = SemesterViewModel()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                if horizontalSizeClass == .regular {
+                    VStack(spacing: 24) {
+                        HStack(alignment: .top, spacing: 20) {
+                            SemesterProgressCard(
+                                completed: viewModel.completedExams,
+                                total: viewModel.totalExams,
+                                progress: viewModel.progress
+                            )
+                            .frame(maxWidth: .infinity)
 
-                    SemesterProgressCard(
-                        completed: viewModel.completedExams,
-                        total: viewModel.totalExams,
-                        progress: viewModel.progress
-                    )
-                    .padding(.horizontal, 20)
+                            PriorityBreakdownCard(
+                                highCount: viewModel.highPriorityCount,
+                                mediumCount: viewModel.mediumPriorityCount,
+                                lowCount: viewModel.lowPriorityCount
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 32)
 
-                    PriorityBreakdownCard(
-                        highCount: viewModel.highPriorityCount,
-                        mediumCount: viewModel.mediumPriorityCount,
-                        lowCount: viewModel.lowPriorityCount
-                    )
-                    .padding(.horizontal, 20)
+                        if !viewModel.examsByMonth.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Vizsganaptár")
+                                    .font(.headline)
+                                    .padding(.horizontal, 32)
 
-                    if !viewModel.examsByMonth.isEmpty {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Vizsganaptár")
-                                .font(.headline)
-                                .padding(.horizontal, 20)
+                                HStack(alignment: .top, spacing: 20) {
+                                    let months = viewModel.examsByMonth
+                                    let leftItems = stride(from: 0, to: months.count, by: 2).map { months[$0] }
+                                    let rightItems = stride(from: 1, to: months.count, by: 2).map { months[$0] }
 
-                            ForEach(viewModel.examsByMonth, id: \.month) { item in
-                                MonthSection(month: item.month, exams: item.exams)
+                                    VStack(spacing: 16) {
+                                        ForEach(leftItems, id: \.month) { item in
+                                            MonthSection(month: item.month, exams: item.exams)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+
+                                    VStack(spacing: 16) {
+                                        ForEach(rightItems, id: \.month) { item in
+                                            MonthSection(month: item.month, exams: item.exams)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .padding(.horizontal, 32)
                             }
                         }
                     }
+                    .padding(.bottom, 32)
+                } else {
+                    VStack(spacing: 24) {
+                        SemesterProgressCard(
+                            completed: viewModel.completedExams,
+                            total: viewModel.totalExams,
+                            progress: viewModel.progress
+                        )
+                        .padding(.horizontal, 20)
+
+                        PriorityBreakdownCard(
+                            highCount: viewModel.highPriorityCount,
+                            mediumCount: viewModel.mediumPriorityCount,
+                            lowCount: viewModel.lowPriorityCount
+                        )
+                        .padding(.horizontal, 20)
+
+                        if !viewModel.examsByMonth.isEmpty {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Vizsganaptár")
+                                    .font(.headline)
+                                    .padding(.horizontal, 20)
+
+                                ForEach(viewModel.examsByMonth, id: \.month) { item in
+                                    MonthSection(month: item.month, exams: item.exams)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 32)
                 }
-                .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Félév előnézete")
             .navigationBarTitleDisplayMode(.large)
-            
             .onChange(of: exams, initial: true) { _, newValue in
                 viewModel.exams = newValue
             }
         }
     }
 }
-
 
 struct SemesterProgressCard: View {
     let completed: Int
@@ -108,7 +155,6 @@ struct SemesterProgressCard: View {
     }
 }
 
-
 struct PriorityBreakdownCard: View {
     let highCount: Int
     let mediumCount: Int
@@ -158,7 +204,6 @@ struct PriorityBar: View {
     }
 }
 
-
 struct MonthSection: View {
     let month: String
     let exams: [Exam]
@@ -185,7 +230,6 @@ struct TimelineExamRow: View {
     let exam: Exam
     let isLast: Bool
 
-   
     private var dateString: String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "hu_HU")
@@ -243,7 +287,6 @@ struct TimelineExamRow: View {
         .padding(.vertical, 2)
     }
 }
-
 
 #Preview {
     SemesterView()

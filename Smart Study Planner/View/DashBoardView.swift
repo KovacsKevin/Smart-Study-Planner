@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 import SwiftData
 
@@ -19,17 +17,11 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    
-                    
                     HeroHeaderView()
-                    
-                    
                     QuickStatsRow(exams: exams)
-                    
                     
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeader(title: "Mai tanulási napló", icon: "note.text")
-                        
                         if let note = todayNote {
                             TodayNoteCard(note: note)
                         } else {
@@ -37,10 +29,8 @@ struct DashboardView: View {
                         }
                     }
                     
-                    
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeader(title: "Közelgő vizsgák", icon: "calendar.badge.exclamationmark")
-                        
                         if upcomingExams.isEmpty {
                             EmptyExamsCard()
                         } else {
@@ -49,7 +39,6 @@ struct DashboardView: View {
                             }
                         }
                     }
-                    
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
@@ -57,21 +46,9 @@ struct DashboardView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Smart Study Planner")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.indigo)
-                    }
-                }
-            }
         }
     }
 }
-
 
 struct HeroHeaderView: View {
     private var greeting: String {
@@ -104,7 +81,6 @@ struct HeroHeaderView: View {
         .padding(.top, 8)
     }
 }
-
 
 struct QuickStatsRow: View {
     let exams: [Exam]
@@ -150,7 +126,6 @@ struct StatCard: View {
     }
 }
 
-
 struct SectionHeader: View {
     let title: String
     let icon: String
@@ -166,7 +141,6 @@ struct SectionHeader: View {
         }
     }
 }
-
 
 struct TodayNoteCard: View {
     let note: DailyNote
@@ -210,7 +184,7 @@ struct EmptyNoteCard: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Image(systemName: "plus.circle.fill")
+            Image(systemName: "square.and.pencil")
                 .font(.title2)
                 .foregroundStyle(.indigo)
         }
@@ -220,7 +194,6 @@ struct EmptyNoteCard: View {
         .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
     }
 }
-
 
 struct ExamRowCard: View {
     let exam: Exam
@@ -279,7 +252,6 @@ struct EmptyExamsCard: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     DashboardView()
         .modelContainer(for: [Exam.self, DailyNote.self], inMemory: true)
